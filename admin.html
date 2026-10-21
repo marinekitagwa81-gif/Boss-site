@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Boîte du Boss</title>
+<style>
+:root{--bg:#0d0a1a;--card:#171227;--ink:#f4ecff;--tit:#d9c4ff;--mut:#9a8cb8;--btn:#8f5fc9;--btn2:#a779e0;--line:#2e2445;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif;min-height:100vh;display:flex;justify-content:center;padding:20px 14px}
+main{width:100%;max-width:440px}
+.card{background:var(--card);border-radius:24px;padding:18px;text-align:center}
+h1{margin:0 0 14px;font-size:22px;color:var(--tit);text-transform:uppercase}
+input{width:100%;border:2px solid var(--line);border-radius:14px;background:#100c1d;color:var(--ink);font:inherit;padding:12px 14px;margin-bottom:12px}
+button{border:0;border-radius:14px;padding:12px 22px;font:700 16px/1 inherit;font-family:inherit;color:#fff;background:linear-gradient(135deg,var(--btn),var(--btn2));cursor:pointer}
+button.ghost{background:transparent;color:var(--mut);border:2px solid var(--line);font-weight:600;font-size:14px;padding:8px 14px;margin:0 4px}
+.msg{border:2px solid var(--line);border-radius:18px;padding:12px 14px;margin:10px 0;text-align:left;word-wrap:break-word}
+.msg small{color:var(--mut);display:block;margin-top:6px}
+.del{background:none;border:0;color:var(--mut);padding:0;font-size:13px;text-decoration:underline;cursor:pointer;margin-top:4px}
+.small{color:var(--mut);font-size:13px}
+.hide{display:none}
+</style>
+</head>
+<body>
+<main>
+ <div class="card">
+  <h1>✦ Boîte du Boss ✦</h1>
+  <div id="login">
+   <input id="pw" type="password" placeholder="Code secret" autocomplete="current-password">
+   <button id="enter">Ouvrir</button>
+   <p id="err" class="small hide"></p>
+  </div>
+  <div id="box" class="hide">
+   <div><span id="count" class="small"></span></div>
+   <div id="list"></div>
+   <button class="ghost" id="refresh">Actualiser</button><button class="ghost" id="out">Quitter</button>
+  </div>
+ </div>
+</main>
+<script>
+(function(){
+ var $=function(i){return document.getElementById(i)};
+ var pw="";
+ function fmt(ts){try{return new Date(ts).toLocaleString("fr-FR",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}catch(e){return""}}
+ async function load(){
+  var r=await fetch("/api/messages",{headers:{"x-admin-password":pw}});
+  if(!r.ok)throw new Error(r.status===401?"Code incorrect":"Erreur serveur");
+  var j=await r.json(),l=$("list");l.textContent="";
+  $("count").textContent=j.messages.length+" message"+(j.messages.length>1?"s":"");
+  j.messages.forEach(function(m){
+   var el=document.createElement("div");el.className="msg";
+   var p=document.createElement("div");p.textContent=m.text;
+   var s=document.createElement("small");s.textContent=fmt(m.ts);
+   var b=document.createElement("button");b.className="del";b.textContent="Supprimer";
+   b.onclick=async function(){
+    await fetch("/api/messages",{method:"DELETE",headers:{"x-admin-password":pw,"Content-Type":"application/json"},body:JSON.stringify({id:m.id})});
+    load().catch(function(){});
+   };
+   el.appendChild(p);el.appendChild(s);el.appendChild(b);l.appendChild(el);
+  });
+ }
+ async function enter(){
+  pw=$("pw").value||sessionStorage.getItem("pw")||"";
+  try{await load();try{sessionStorage.setItem("pw",pw)}catch(e){}
+   $("login").classList.add("hide");$("box").classList.remove("hide");
+  }catch(e){$("err").textContent=e.message;$("err").classList.remove("hide")}
+ }
+ $("enter").addEventListener("click",enter);
+ $("pw").addEventListener("keydown",function(e){if(e.key==="Enter")enter()});
+ $("refresh").addEventListener("click",function(){load().catch(function(){})});
+ $("out").addEventListener("click",function(){try{sessionStorage.removeItem("pw")}catch(e){}location.reload()});
+ try{if(sessionStorage.getItem("pw")){$("pw").value=sessionStorage.getItem("pw");enter()}}catch(e){}
+})();
+</script>
+</body>
+</html>

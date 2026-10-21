@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Un message pour le Boss</title>
+<style>
+:root{--bg:#0d0a1a;--card:#171227;--ink:#f4ecff;--tit:#d9c4ff;--mut:#9a8cb8;--btn:#8f5fc9;--btn2:#a779e0;--line:#2e2445;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif;min-height:100vh;display:flex;justify-content:center;padding:20px 14px}
+main{width:100%;max-width:440px}
+.card{background:var(--card);border-radius:24px;padding:16px;text-align:center}
+.pic{border-radius:20px;overflow:hidden;line-height:0;margin-bottom:18px}
+.pic svg{width:100%;height:auto}
+h1{margin:0 0 10px;font-size:23px;letter-spacing:.5px;color:var(--tit);text-transform:uppercase}
+.dest{color:var(--mut);margin:0 0 14px}
+.tag{font-size:18px;margin:0 6px 18px}
+button{border:0;border-radius:14px;padding:14px 26px;font:700 18px/1 inherit;font-family:inherit;color:#fff;background:linear-gradient(135deg,var(--btn),var(--btn2));cursor:pointer;text-transform:uppercase}
+button:disabled{opacity:.5}
+.full{width:100%}
+button.ghost{background:transparent;color:var(--mut);border:2px solid var(--line);font-weight:600;font-size:14px;padding:10px 16px;text-transform:none;margin-top:12px}
+.small{color:var(--mut);font-size:13px;margin:16px 4px 4px}
+textarea{width:100%;height:140px;border:2px solid var(--line);border-radius:16px;background:#100c1d;color:var(--ink);font:inherit;padding:12px 14px;resize:none;text-align:left}
+textarea:focus{outline:none;border-color:var(--btn2)}
+.row{display:flex;justify-content:space-between;color:var(--mut);font-size:13px;margin:6px 4px 12px}
+.hide{display:none}
+</style>
+</head>
+<body>
+<main>
+ <div class="card">
+  <div class="pic">
+   <svg viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Enveloppe scellée sous la lune">
+    <defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1b1640"/><stop offset="1" stop-color="#3a1f4a"/></linearGradient>
+    <linearGradient id="env" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e6c48f"/><stop offset="1" stop-color="#b98c5a"/></linearGradient></defs>
+    <rect width="400" height="300" fill="url(#sky)"/>
+    <path d="M300 40a46 46 0 1 0 40 70a38 38 0 1 1-40-70z" fill="#f0b25a"/>
+    <g fill="#f0c98a"><circle cx="70" cy="50" r="2"/><circle cx="130" cy="95" r="1.5"/><circle cx="360" cy="150" r="2"/><circle cx="40" cy="140" r="1.5"/><circle cx="240" cy="30" r="1.5"/></g>
+    <g transform="rotate(-8 200 175)"><rect x="95" y="115" width="210" height="140" rx="6" fill="url(#env)"/>
+    <path d="M95 121L200 195L305 121" fill="none" stroke="#8d6538" stroke-width="3"/>
+    <path d="M95 255L170 188M305 255L230 188" stroke="#8d6538" stroke-width="2" fill="none"/>
+    <circle cx="200" cy="195" r="22" fill="#a3262d"/><circle cx="200" cy="195" r="14" fill="none" stroke="#7a1a20" stroke-width="3"/></g>
+   </svg>
+  </div>
+
+  <div id="landing">
+   <h1>✦ Un message pour le Boss ✦</h1>
+   <p class="dest">Destinataire : BENNY Hadès 21</p>
+   <p class="tag">Viens laisser un message pour le Boss 👀</p>
+   <button id="open">💌 Laisser un message</button>
+   <p class="small">Une surprise signée par ton clan… 🔥</p>
+  </div>
+
+  <div id="send" class="hide">
+   <h1>✦ Ton message ✦</h1>
+   <textarea id="txt" maxlength="300" placeholder="Écris ta dédicace pour le Boss…"></textarea>
+   <div class="row"><span>🕵️ 100 % anonyme</span><span id="cnt">0/300</span></div>
+   <button id="go" class="full" disabled>Envoyer</button>
+   <p id="err" class="small hide"></p>
+  </div>
+
+  <div id="thanks" class="hide">
+   <h1>✦ Message envoyé ✦</h1>
+   <p class="tag">Le Boss va adorer 🔥</p>
+   <button class="ghost" id="again">Envoyer un autre message</button>
+  </div>
+ </div>
+ <p class="small" style="text-align:center;margin-top:16px">Créé par Zénaïdy NH 21<br>in collaboration with Raito NH21</p>
+</main>
+<script>
+(function(){
+ var $=function(i){return document.getElementById(i)};
+ var txt=$("txt"),go=$("go"),err=$("err");
+ function show(s){["landing","send","thanks"].forEach(function(id){$(id).classList[id===s?"remove":"add"]("hide")})}
+ txt.addEventListener("input",function(){$("cnt").textContent=txt.value.length+"/300";go.disabled=!txt.value.trim()});
+ $("open").addEventListener("click",function(){show("send")});
+ $("again").addEventListener("click",function(){go.disabled=true;show("send")});
+ go.addEventListener("click",async function(){
+  var v=txt.value.trim();if(!v)return;
+  go.disabled=true;err.classList.add("hide");
+  try{
+   var r=await fetch("/api/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:v})});
+   var j=await r.json().catch(function(){return{}});
+   if(!r.ok)throw new Error(j.error||"Erreur");
+   txt.value="";$("cnt").textContent="0/300";show("thanks");
+  }catch(e){
+   err.textContent=(e&&e.message)||"Impossible d’envoyer pour l’instant.";
+   err.classList.remove("hide");go.disabled=false;
+  }
+ });
+})();
+</script>
+</body>
+</html>
